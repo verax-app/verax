@@ -20,7 +20,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1a1a2e"
       },
-      "package": "app.verax"
+      "package": "app.verax",
+      "allowBackup": false
     },
     "web": {
       "favicon": "./assets/favicon.png",
