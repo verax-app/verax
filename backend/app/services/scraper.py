@@ -1,9 +1,21 @@
 import feedparser
 import httpx
 from bs4 import BeautifulSoup
+from datetime import datetime
 from app.config import settings
 from app.database import SessionLocal
 from app.models.article import Article
+
+
+def _parse_date(entry) -> datetime | None:
+    for field in ("published_parsed", "updated_parsed"):
+        t = getattr(entry, field, None)
+        if t:
+            try:
+                return datetime(*t[:6])
+            except Exception:
+                pass
+    return None
 
 RSS_SOURCES = [
     # Global — General
@@ -46,6 +58,23 @@ RSS_SOURCES = [
     # Sports
     {"name": "ESPN",              "url": "https://www.espn.com/espn/rss/news",                           "region": "global", "lang": "en", "category": "sports"},
     {"name": "BBC Sport",         "url": "http://feeds.bbci.co.uk/sport/rss.xml",                        "region": "global", "lang": "en", "category": "sports"},
+    {"name": "Sky Sports",        "url": "https://www.skysports.com/rss/12040",                          "region": "global", "lang": "en", "category": "sports"},
+
+    # Entertainment
+    {"name": "Variety",           "url": "https://variety.com/feed/",                                   "region": "global", "lang": "en", "category": "entertainment"},
+    {"name": "Hollywood Reporter","url": "https://www.hollywoodreporter.com/feed/",                      "region": "global", "lang": "en", "category": "entertainment"},
+    {"name": "Rolling Stone",     "url": "https://www.rollingstone.com/feed/",                          "region": "global", "lang": "en", "category": "entertainment"},
+    {"name": "Pitchfork",         "url": "https://pitchfork.com/feed/feed-news/rss",                    "region": "global", "lang": "en", "category": "entertainment"},
+
+    # Gaming
+    {"name": "IGN",               "url": "https://feeds.ign.com/ign/games-all",                         "region": "global", "lang": "en", "category": "gaming"},
+    {"name": "Polygon",           "url": "https://www.polygon.com/rss/index.xml",                       "region": "global", "lang": "en", "category": "gaming"},
+    {"name": "Eurogamer",         "url": "https://www.eurogamer.net/?format=rss",                       "region": "global", "lang": "en", "category": "gaming"},
+
+    # Crypto
+    {"name": "CoinDesk",          "url": "https://www.coindesk.com/arc/outboundfeeds/rss/",             "region": "global", "lang": "en", "category": "crypto"},
+    {"name": "CoinTelegraph",     "url": "https://cointelegraph.com/rss",                               "region": "global", "lang": "en", "category": "crypto"},
+    {"name": "Decrypt",           "url": "https://decrypt.co/feed",                                     "region": "global", "lang": "en", "category": "crypto"},
 
     # India
     {"name": "The Hindu",         "url": "https://www.thehindu.com/feeder/default.rss",                  "region": "india",  "lang": "en", "category": "general"},
@@ -61,11 +90,50 @@ RSS_SOURCES = [
     {"name": "AP News",           "url": "https://rsshub.app/apnews/topics/apf-topnews",                 "region": "us",     "lang": "en", "category": "general"},
     {"name": "Washington Post",   "url": "https://feeds.washingtonpost.com/rss/world",                   "region": "us",     "lang": "en", "category": "general"},
     {"name": "NY Times",          "url": "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",    "region": "us",     "lang": "en", "category": "general"},
+    {"name": "Politico",          "url": "https://www.politico.com/rss/politicopicks.xml",               "region": "us",     "lang": "en", "category": "politics"},
 
     # UK
     {"name": "The Guardian UK",   "url": "https://www.theguardian.com/uk/rss",                           "region": "uk",     "lang": "en", "category": "general"},
     {"name": "BBC UK",            "url": "http://feeds.bbci.co.uk/news/uk/rss.xml",                      "region": "uk",     "lang": "en", "category": "general"},
     {"name": "The Telegraph",     "url": "https://www.telegraph.co.uk/rss.xml",                          "region": "uk",     "lang": "en", "category": "general"},
+    {"name": "The Independent",   "url": "https://www.independent.co.uk/news/rss",                       "region": "uk",     "lang": "en", "category": "general"},
+
+    # Australia
+    {"name": "ABC News AU",       "url": "https://www.abc.net.au/news/feed/51120/rss.xml",               "region": "australia", "lang": "en", "category": "general"},
+    {"name": "The Guardian AU",   "url": "https://www.theguardian.com/australia-news/rss",               "region": "australia", "lang": "en", "category": "general"},
+    {"name": "Sydney Morning Herald", "url": "https://www.smh.com.au/rss/feed.xml",                      "region": "australia", "lang": "en", "category": "general"},
+
+    # Canada
+    {"name": "CBC News",          "url": "https://www.cbc.ca/cmlink/rss-topstories",                    "region": "canada", "lang": "en", "category": "general"},
+    {"name": "Global News",       "url": "https://globalnews.ca/feed/",                                 "region": "canada", "lang": "en", "category": "general"},
+    {"name": "Toronto Star",      "url": "https://www.thestar.com/content/thestar/feed.rss",             "region": "canada", "lang": "en", "category": "general"},
+
+    # Europe
+    {"name": "Euronews",          "url": "https://www.euronews.com/rss?format=mrss&level=theme&name=news", "region": "europe", "lang": "en", "category": "general"},
+    {"name": "POLITICO EU",       "url": "https://www.politico.eu/feed/",                               "region": "europe", "lang": "en", "category": "politics"},
+    {"name": "DW Europe",         "url": "https://rss.dw.com/rdf/rss-en-eu",                            "region": "europe", "lang": "en", "category": "general"},
+    {"name": "The Local",         "url": "https://feeds.thelocal.com/rss/en",                           "region": "europe", "lang": "en", "category": "general"},
+
+    # Middle East
+    {"name": "Arab News",         "url": "https://www.arabnews.com/rss.xml",                            "region": "middle-east", "lang": "en", "category": "general"},
+    {"name": "Jerusalem Post",    "url": "https://www.jpost.com/rss/rssfeedsheadlines.aspx",            "region": "middle-east", "lang": "en", "category": "general"},
+    {"name": "Al Monitor",        "url": "https://www.al-monitor.com/rss",                              "region": "middle-east", "lang": "en", "category": "general"},
+
+    # Africa
+    {"name": "AllAfrica",         "url": "https://allafrica.com/tools/headlines/rdf/latest/headlines.rdf", "region": "africa", "lang": "en", "category": "general"},
+    {"name": "Mail & Guardian",   "url": "https://mg.co.za/feed/",                                     "region": "africa", "lang": "en", "category": "general"},
+    {"name": "The East African",  "url": "https://www.theeastafrican.co.ke/tea/rss",                    "region": "africa", "lang": "en", "category": "general"},
+
+    # Latin America
+    {"name": "Mercopress",        "url": "https://en.mercopress.com/rss",                               "region": "latam",  "lang": "en", "category": "general"},
+    {"name": "Rio Times",         "url": "https://riotimesonline.com/feed/",                            "region": "latam",  "lang": "en", "category": "general"},
+    {"name": "Buenos Aires Herald","url": "https://buenosairesherald.com/feed",                         "region": "latam",  "lang": "en", "category": "general"},
+
+    # Asia Pacific
+    {"name": "Japan Times",       "url": "https://www.japantimes.co.jp/feed/",                          "region": "asia",   "lang": "en", "category": "general"},
+    {"name": "Straits Times",     "url": "https://www.straitstimes.com/news/world/rss.xml",             "region": "asia",   "lang": "en", "category": "general"},
+    {"name": "SCMP",              "url": "https://www.scmp.com/rss/91/feed",                            "region": "asia",   "lang": "en", "category": "general"},
+    {"name": "Nikkei Asia",       "url": "https://asia.nikkei.com/rss/feed/nar",                        "region": "asia",   "lang": "en", "category": "business"},
 ]
 
 _HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; Verax/1.0)"}
@@ -107,6 +175,7 @@ def _fetch_feed(source: dict, db) -> None:
                 region=source["region"],
                 language=source["lang"],
                 category=source["category"],
+                published_at=_parse_date(entry),
             ))
         db.commit()
     except Exception:

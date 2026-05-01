@@ -21,4 +21,5 @@ class Article(Base):
     tags             = Column(String(500), nullable=True)
     read_time        = Column(Integer, default=60)
     summarized       = Column(Boolean, default=False, index=True)
+    published_at     = Column(DateTime, nullable=True, index=True)
     created_at       = Column(DateTime, server_default=func.now())

@@ -60,6 +60,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] — 2026-04-30
+
+### Added
+- 3-step onboarding flow — Welcome, region selection (11 regions), topic selection (11 categories); preferences saved to AsyncStorage; shown only on first launch
+- Personalised feed — home feed defaults to "For You" using onboarding preferences; category and region pills override temporarily; preferred topics appear first in pill row
+- `published_at` field on articles — RSS entry publish date captured at scrape time; feed sorted by actual publish date (`COALESCE(published_at, created_at) DESC`) instead of insertion order, naturally interleaving content across sources
+- Compound pagination cursor `(before_ts, before_id)` — replaces single `before_id` cursor; eliminates skipped or duplicate articles when sorting by timestamp
+- Multi-region and multi-category API filtering — `regions` and `categories` comma-separated query params with SQL `IN` filter; fully backward compatible with existing single-value params
+- Expanded RSS sources to 70+ — added Australia (ABC, Guardian AU, SMH), Canada (CBC, Global News, Toronto Star), Europe (Euronews, POLITICO EU, DW), Middle East (Arab News, Jerusalem Post, Al Monitor), Africa (AllAfrica, Mail & Guardian, The East African), Latin America (Mercopress, Rio Times, Buenos Aires Herald), Asia Pacific (Japan Times, Straits Times, SCMP, Nikkei Asia), Entertainment (Variety, Hollywood Reporter, Rolling Stone, Pitchfork), Gaming (IGN, Polygon, Eurogamer), Crypto (CoinDesk, CoinTelegraph, Decrypt)
+- `make kill-backend` target — `make run-backend` now kills port 8000 before starting, eliminates "Address already in use" error
+
+### Fixed
+- Splash screen flicker on launch — `SplashScreen.preventAutoHideAsync()` holds splash until onboarding check resolves; navigator mounts directly on the correct screen via `initialRouteName`, no redirect needed
+- Feed double-query on launch — `FeedScreen` waits for preferences before mounting `Feed`; single correct query fires on first render, no wrong-then-right refetch
+- Local dev API URL always `localhost` on physical device — `resolveBaseUrl()` derives host from `Constants.expoConfig.hostUri` (same IP as Metro bundler); `mobile/.env.local` was silently overriding `mobile/.env` due to Expo env priority
+- `make run-backend` uses `venv/bin/uvicorn` — no longer requires global uvicorn install or manual venv activation
+
+---
+
 ## [1.2.0] — 2026-04-30
 
 ### Added

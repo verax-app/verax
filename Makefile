@@ -1,4 +1,4 @@
-.PHONY: check check-backend check-mobile env-local env-staging env-production run-backend run-mobile
+.PHONY: check check-backend check-mobile env-local env-staging env-production run-backend run-mobile kill-backend
 
 # ── CI checks (mirrors .github/workflows/ci.yml exactly) ─────────────────────
 
@@ -33,8 +33,6 @@ _switch-env:
 
 env-local:
 	@$(MAKE) -s _switch-env ENV=local
-	@sed -i.bak "s|http://localhost|http://$(LOCAL_IP)|g" mobile/.env && rm -f mobile/.env.bak
-	@echo "==> mobile/.env API URL set to http://$(LOCAL_IP):8000/api"
 
 env-staging:
 	@$(MAKE) -s _switch-env ENV=staging
@@ -44,10 +42,13 @@ env-production:
 
 # ── Local dev servers ─────────────────────────────────────────────────────────
 
-run-backend:
-	cd backend && APP_ENV=local uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+kill-backend:
+	@lsof -ti:8000 | xargs kill -9 2>/dev/null || true
+
+run-backend: kill-backend
+	cd backend && APP_ENV=local venv/bin/uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 LOCAL_IP := $(shell ipconfig getifaddr en0 2>/dev/null || hostname -I 2>/dev/null | awk '{print $$1}')
 
-run-mobile:
+run-mobile: env-local
 	cd mobile && REACT_NATIVE_PACKAGER_HOSTNAME=$(LOCAL_IP) npx expo start --go --clear

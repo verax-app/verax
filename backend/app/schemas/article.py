@@ -17,6 +17,7 @@ class ArticleOut(BaseModel):
     bias_reason:     Optional[str]
     tags:            Optional[str]
     read_time:       int
+    published_at:    Optional[datetime]
     created_at:      datetime
 
     model_config = {"from_attributes": True}

@@ -1,4 +1,12 @@
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000/api'
+import Constants from 'expo-constants'
+
+function resolveBaseUrl(): string {
+  if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL
+  const host = Constants.expoConfig?.hostUri?.split(':')[0]
+  return host ? `http://${host}:8000/api` : 'http://localhost:8000/api'
+}
+
+const BASE_URL = resolveBaseUrl()
 
 export interface Article {
   id:              number
@@ -14,15 +22,24 @@ export interface Article {
   bias_reason:     string | null
   tags:            string | null
   read_time:       number
+  published_at:    string | null
   created_at:      string
 }
 
+export interface PageCursor {
+  before_ts: string
+  before_id: number
+}
+
 export interface NewsParams {
-  language?:  string
-  region?:    string
-  category?:  string
-  before_id?: number
-  limit?:     number
+  language?:   string
+  region?:     string
+  regions?:    string
+  category?:   string
+  categories?: string
+  before_ts?:  string
+  before_id?:  number
+  limit?:      number
 }
 
 async function get<T>(path: string, params?: Record<string, string | number>): Promise<T> {
