@@ -1,9 +1,8 @@
-# Environment
+# Environment — actual env files are gitignored; .env.example is committed as template
 .env
 .env.*
-.env.example
-.env.local
-.env.production
+!.env.example
+!**/.env.example
 
 # Python
 __pycache__/

@@ -1,10 +1,10 @@
 import React, { useEffect, useRef } from 'react'
-import { Animated, StyleSheet, View, ViewStyle } from 'react-native'
+import { Animated, DimensionValue, StyleSheet, View, ViewStyle } from 'react-native'
 import { Radius } from '../../constants/theme'
 import { useTheme } from '../../context/ThemeContext'
 
 interface Props {
-  width?:  number | string
+  width?:  DimensionValue
   height?: number
   radius?: number
   style?:  ViewStyle

@@ -1,4 +1,7 @@
+import os
 from pydantic_settings import BaseSettings
+
+_env = os.getenv("APP_ENV", "local")
 
 
 class Settings(BaseSettings):
@@ -13,7 +16,7 @@ class Settings(BaseSettings):
     articles_per_feed: int = 10
     batch_summarize: int = 10
 
-    model_config = {"env_file": ".env", "extra": "ignore"}
+    model_config = {"env_file": f".env.{_env}", "extra": "ignore"}
 
 
 settings = Settings()

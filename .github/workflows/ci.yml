@@ -24,10 +24,10 @@ jobs:
       - name: Check syntax
         run: |
           cd backend
-          python -m py_compile app/main.py app/config.py app/database.py
-          python -m py_compile app/api/news.py app/api/router.py
-          python -m py_compile app/models/article.py app/schemas/article.py
-          python -m py_compile app/services/scraper.py app/services/summarizer.py app/services/scheduler.py
+          python3 -m py_compile app/main.py app/config.py app/database.py
+          python3 -m py_compile app/api/news.py app/api/router.py
+          python3 -m py_compile app/models/article.py app/schemas/article.py
+          python3 -m py_compile app/services/scraper.py app/services/summarizer.py app/services/scheduler.py
 
   mobile:
     name: Mobile

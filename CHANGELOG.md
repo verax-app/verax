@@ -50,11 +50,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- GitHub Actions CI workflow — runs on every PR to `main`, checks backend syntax and mobile TypeScript
-- CODEOWNERS — all changes require approval from `@dhanasekaranweb`
-- Branch protection on `main` — PRs required, force push blocked
-
 ### Planned
 - Multi-language support (Hindi, Tamil, Spanish, French, Arabic)
 - Bookmarks — save articles offline
@@ -62,3 +57,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Push notifications for breaking news
 - User-defined RSS sources
 - iOS App Store and Google Play release
+
+---
+
+## [1.2.0] — 2026-04-30
+
+### Added
+- GitHub Actions CI workflow — runs on every PR to `main`, checks backend syntax and mobile TypeScript
+- CODEOWNERS — all changes require approval from `@dhanasekaranweb`
+- Branch protection on `main` — PRs required, force push blocked
+- `Makefile` — `make check` runs full CI suite locally (mirrors GitHub Actions exactly); `make env-local/staging/production` switches environments without touching code; `make run-backend` and `make run-mobile HOST=<ip>` for local dev
+- Multi-environment support — `APP_ENV=local|staging|production` selects the matching `.env.<env>` file; per-environment files for backend and mobile; `.env.example` committed as template
+- Expanded RSS sources from 10 to 40+ covering Global, Tech, Science, Health, Business, Environment, Sports, India, US, UK
+
+### Fixed
+- `Skeleton` component `width` prop typed as `DimensionValue` instead of `string | number` — fixes TypeScript error in CI
+- Infinite scroll double-trigger — `onEndReached` now uses a stable ref instead of recreating on every `isFetchingNextPage` change; threshold reduced from 0.4 to 0.2
+- Local dev backend unreachable on physical device — `.env.local` now uses machine IP instead of `localhost`
+- CI syntax check uses `python3` consistently across local and GitHub Actions

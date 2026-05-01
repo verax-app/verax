@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons'
-import React, { useCallback, useMemo, useState } from 'react'
+import React, { useCallback, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -47,9 +47,12 @@ export default function FeedScreen() {
     })
   }, [data])
 
+  const canLoadMore = useRef(false)
+  canLoadMore.current = !!hasNextPage && !isFetchingNextPage
+
   const onEndReached = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) fetchNextPage()
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+    if (canLoadMore.current) fetchNextPage()
+  }, [fetchNextPage])
 
   const ListFooter = useCallback(() => {
     if (!isFetchingNextPage) return null
@@ -142,7 +145,7 @@ export default function FeedScreen() {
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           onEndReached={onEndReached}
-          onEndReachedThreshold={0.4}
+          onEndReachedThreshold={0.2}
           ListFooterComponent={ListFooter}
           refreshControl={
             <RefreshControl
