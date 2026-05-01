@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import React from 'react'
+import React, { useEffect } from 'react'
 import {
   Dimensions,
   Linking,
@@ -17,6 +17,7 @@ import { ArticleSkeleton } from '../../components/ui/Skeleton'
 import { Font, Radius, Spacing } from '../../constants/theme'
 import { useTheme } from '../../context/ThemeContext'
 import { useArticle } from '../../hooks/useNews'
+import { recordView } from '../../lib/preferences'
 
 const { width: W } = Dimensions.get('window')
 
@@ -25,6 +26,10 @@ export default function ArticleScreen() {
   const router      = useRouter()
   const { colors }  = useTheme()
   const { data, isLoading } = useArticle(Number(id))
+
+  useEffect(() => {
+    if (data?.id) recordView(data.id, data.author)
+  }, [data?.id])
 
   if (isLoading) {
     return (

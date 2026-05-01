@@ -24,6 +24,9 @@ export interface Article {
   read_time:       number
   published_at:    string | null
   created_at:      string
+  author:          string | null
+  rss_summary:     string | null
+  source_tags:     string | null
 }
 
 export interface PageCursor {
@@ -42,6 +45,17 @@ export interface NewsParams {
   limit?:      number
 }
 
+export interface RecommendedParams {
+  filter_region?:   string  // hard SQL filter — set when region pill is active
+  filter_category?: string  // hard SQL filter — set when category pill is active (no region)
+  categories?:      string  // soft semantic preference
+  regions?:         string  // soft semantic preference
+  viewed_ids?:      string
+  viewed_authors?:  string  // pipe-delimited (|||)
+  limit?:           number
+  offset?:          number
+}
+
 async function get<T>(path: string, params?: Record<string, string | number>): Promise<T> {
   const url = new URL(`${BASE_URL}${path}`)
   if (params) {
@@ -56,7 +70,8 @@ async function get<T>(path: string, params?: Record<string, string | number>): P
 
 export const api = {
   news: {
-    list:   (p: NewsParams = {}) => get<Article[]>('/news', p as Record<string, string | number>),
-    detail: (id: number)          => get<Article>(`/news/${id}`),
+    list:        (p: NewsParams = {})        => get<Article[]>('/news',             p as Record<string, string | number>),
+    recommended: (p: RecommendedParams = {}) => get<Article[]>('/news/recommended', p as Record<string, string | number>),
+    detail:      (id: number)                => get<Article>(`/news/${id}`),
   },
 }

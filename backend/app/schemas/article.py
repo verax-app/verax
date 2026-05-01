@@ -19,5 +19,8 @@ class ArticleOut(BaseModel):
     read_time:       int
     published_at:    Optional[datetime]
     created_at:      datetime
+    author:          Optional[str]
+    rss_summary:     Optional[str]
+    source_tags:     Optional[str]
 
     model_config = {"from_attributes": True}

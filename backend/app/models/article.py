@@ -23,3 +23,7 @@ class Article(Base):
     summarized       = Column(Boolean, default=False, index=True)
     published_at     = Column(DateTime, nullable=True, index=True)
     created_at       = Column(DateTime, server_default=func.now())
+    # RSS-sourced enrichment fields (added v1.4)
+    rss_summary      = Column(Text, nullable=True)
+    author           = Column(String(200), nullable=True)
+    source_tags      = Column(String(500), nullable=True)

@@ -1,4 +1,4 @@
-.PHONY: check check-backend check-mobile env-local env-staging env-production run-backend run-mobile kill-backend
+.PHONY: check check-backend check-mobile env-local env-staging env-production run-backend run-mobile run-android kill-backend
 
 # ── CI checks (mirrors .github/workflows/ci.yml exactly) ─────────────────────
 
@@ -26,8 +26,6 @@ _switch-env:
 		src=$$dir/.env.$(ENV); \
 		if [ -f "$$src" ]; then \
 			cp $$src $$dir/.env && echo "==> $$dir/.env loaded from $$src"; \
-		else \
-			echo "    WARN: $$src not found — copy $$dir/.env.example to $$src and fill in values"; \
 		fi \
 	done
 
@@ -52,3 +50,6 @@ LOCAL_IP := $(shell ipconfig getifaddr en0 2>/dev/null || hostname -I 2>/dev/nul
 
 run-mobile: env-local
 	cd mobile && REACT_NATIVE_PACKAGER_HOSTNAME=$(LOCAL_IP) npx expo start --go --clear
+
+run-android: env-local
+	cd mobile && REACT_NATIVE_PACKAGER_HOSTNAME=$(LOCAL_IP) npx expo start --go --clear --android

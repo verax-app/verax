@@ -3,6 +3,11 @@ from app.config import settings
 from app.database import SessionLocal
 from app.models.article import Article
 
+_VALID_CATEGORIES = {
+    "tech", "science", "health", "sports", "politics",
+    "business", "entertainment", "environment", "gaming", "crypto", "general",
+}
+
 _PROMPT = """\
 You are Verax's AI analyst. Mission: less noise, more truth.
 Analyze the article. Reply ONLY with valid JSON — no extra text.
@@ -12,12 +17,12 @@ Text:  {text}
 
 Return exactly:
 {{
-  "summary":          "3 clear sentences — who, what, why it matters",
-  "category":         "tech|science|health|sports|politics|business|entertainment|environment|general",
-  "bias":             "left|center-left|center|center-right|right|neutral",
-  "bias_confidence":  80,
-  "bias_reason":      "one sentence",
-  "tags":             ["tag1","tag2","tag3"],
+  "summary":           "3 clear sentences — who, what, why it matters",
+  "category":          "pick exactly ONE word from: tech, science, health, sports, politics, business, entertainment, environment, gaming, crypto, general",
+  "bias":              "pick exactly ONE from: left, center-left, center, center-right, right, neutral",
+  "bias_confidence":   80,
+  "bias_reason":       "one sentence",
+  "tags":              ["tag1", "tag2", "tag3"],
   "read_time_seconds": 120
 }}"""
 
@@ -73,7 +78,8 @@ def summarize_pending() -> None:
             try:
                 data = _call_ai(article.title, article.text[:2000])
                 article.summary         = data.get("summary")
-                article.category        = data.get("category", article.category)
+                raw_cat = str(data.get("category", "")).split("|")[0].split(",")[0].strip().lower()
+                article.category        = raw_cat if raw_cat in _VALID_CATEGORIES else article.category
                 article.bias            = data.get("bias", "neutral")
                 article.bias_confidence = int(data.get("bias_confidence", 0))
                 article.bias_reason     = data.get("bias_reason")

@@ -10,8 +10,12 @@ const CARD_W = Dimensions.get('window').width - Spacing.md * 2
 
 interface Props { article: Article }
 
-function timeAgo(iso: string) {
-  const h = Math.floor((Date.now() - new Date(iso).getTime()) / 3_600_000)
+function timeAgo(iso: string | null | undefined) {
+  if (!iso) return ''
+  // Backend returns naive UTC strings without a timezone suffix.
+  // Appending Z tells JS to parse them as UTC instead of local time.
+  const utc = iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z'
+  const h = Math.floor((Date.now() - new Date(utc).getTime()) / 3_600_000)
   if (h < 1) return 'Just now'
   if (h < 24) return `${h}h ago`
   return `${Math.floor(h / 24)}d ago`
@@ -61,7 +65,7 @@ export function ArticleCard({ article }: Props) {
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={[styles.time, { color: colors.muted }]}>{timeAgo(article.created_at)}</Text>
+          <Text style={[styles.time, { color: colors.muted }]}>{timeAgo(article.published_at ?? article.created_at)}</Text>
           <Text style={[styles.readTime, { color: colors.muted }]}>
             {Math.ceil(article.read_time / 60)} min read
           </Text>

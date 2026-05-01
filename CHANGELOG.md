@@ -48,6 +48,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.0] — 2026-05-01
+
+### Added
+- Content-based recommendation engine (`recommender.py`) — TF-IDF vectorisation (scikit-learn, 10k features, bigrams, sublinear TF) scores every article against a user profile vector built from category preferences (0.50), positionally-decayed read history (0.30), and author affinity (0.20)
+- Maximal Marginal Relevance (MMR) feed selection — replaces round-robin source interleaving; greedily picks articles that maximise relevance while penalising redundancy with already-selected articles, preventing the same story from multiple outlets flooding the feed
+- Adaptive scoring weights — five signals (semantic similarity, recency, category affinity, region match, trending) with different weights for personalised vs cold-start mode; cold-start leans on trending (0.35) and recency (0.30) to surface breaking news for new users
+- Soft category affinity matrix — adjacent categories (tech↔crypto 0.5, tech↔science 0.6, science↔health 0.5, etc.) receive partial scores instead of hard 0/1 binary, broadening relevant content
+- Two-phase recency curve — flat 1.0 for the first 6 h (breaking news window), linear decay 6–48 h, exponential tail beyond 48 h with 36 h half-life; preserves quality day-old content
+- Trending signal — cross-article cosine similarity identifies stories covered simultaneously by multiple sources; normalised fraction of recent articles on the same topic
+- Read history tracking — `recordView(id, author)` on article open; IDs (max 50) and authors (max 30) stored in AsyncStorage; viewed articles excluded from feed output; used to build personalised user profile
+- `author`, `rss_summary`, `source_tags` fields — captured from RSS feed metadata at scrape time; incorporated into TF-IDF corpus and user profile vector
+- Expanded RSS sources from 70 to 135 — added Engadget, TechRadar, The Register, 9to5Mac, Android Authority, MIT AI News, Scientific American, Phys.org, Space.com, NHS UK, Harvard Health, CNBC, MarketWatch, The Economist, Carbon Brief, Grist, Bleacher Report, GameSpot, PC Gamer, The Block, Economic Times, Business Standard, India Today, Axios, The Hill, Vox, Sky News, Korea Herald, Jakarta Post, Dawn, and more across all regions and categories
+- `scikit-learn==1.5.2`, `numpy==1.26.4`, `pandas==2.2.3` added to backend dependencies
+
+### Changed
+- `/news/recommended` endpoint — `filter_region` and `filter_category` hard SQL filters separate from soft `categories`/`regions` scoring preferences; `global` region pill treated as no-restriction (no SQL `WHERE region=` clause) rather than a tag filter
+- Region + category SQL logic — specific region (e.g. `india`) + category sends only the category as a soft semantic preference to avoid near-zero SQL results (e.g. India has no tech-tagged sources); `global` + category applies the category as a hard SQL filter
+- Regional pool broadening — regional filter includes global-tagged articles (`WHERE region IN (region, 'global')`) so thin regional categories (e.g. India + crypto) fall back to globally-relevant content; global articles scored at 0.3 region-match vs 1.0 for exact region
+- Home feed routes all modes through `useRecommendedNews` — For You, category pills, and region pills all use the recommendation engine
+- Pagination offset advances by actual returned page count (`lastPageParam + lastPage.length`) rather than total loaded, surviving recommender cache rebuilds mid-session
+
+### Fixed
+- All articles showing "Just now" — switched timestamp display from `created_at` (scrape insertion time) to `published_at` (actual RSS publish date); appended `Z` suffix to backend datetime strings so JavaScript parses them as UTC instead of local time
+- Region pills showing identical content — `filter_region` hard SQL filter was missing; all regions were scoring identically
+- India + crypto returning only 10 articles — regional filter now includes global articles in the candidate pool
+- Summarizer writing multi-value categories (`tech|science|health`) — AI prompt rewritten to enforce single-word output; parsing sanitised with `split('|')[0]`
+- Pagination stalling after first page — `getNextPageParam` now uses `lastPageParam + lastPage.length`; previous implementation using `allPages.flatMap().length` misaligned after cache rebuilds
+
+---
+
 ## [Unreleased]
 
 ### Planned

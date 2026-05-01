@@ -16,19 +16,25 @@ import { ArticleSkeleton } from '../../components/ui/Skeleton'
 import { CategoryPill } from '../../components/ui/CategoryPill'
 import { Font, Spacing } from '../../constants/theme'
 import { useTheme } from '../../context/ThemeContext'
-import { useNews } from '../../hooks/useNews'
-import { Article, NewsParams } from '../../lib/api'
-import { getPreferences, UserPreferences } from '../../lib/preferences'
+import { useRecommendedNews } from '../../hooks/useNews'
+import { Article, RecommendedParams } from '../../lib/api'
+import { getPreferences, getViewedIds, getViewedAuthors, UserPreferences } from '../../lib/preferences'
 
 const ALL_CATEGORIES = ['general', 'tech', 'science', 'health', 'business', 'sports', 'politics', 'environment', 'entertainment', 'gaming', 'crypto']
 const ALL_REGIONS    = ['global', 'us', 'uk', 'india', 'australia', 'canada', 'europe', 'middle-east', 'africa', 'latam', 'asia']
 
 export default function FeedScreen() {
   const { colors } = useTheme()
-  const [prefs, setPrefs] = useState<UserPreferences | null>(null)
+  const [prefs,         setPrefs        ] = useState<UserPreferences | null>(null)
+  const [viewedIds,     setViewedIds    ] = useState<number[]>([])
+  const [viewedAuthors, setViewedAuthors] = useState<string[]>([])
 
   useEffect(() => {
-    getPreferences().then(setPrefs)
+    Promise.all([getPreferences(), getViewedIds(), getViewedAuthors()]).then(([p, ids, authors]) => {
+      setPrefs(p)
+      setViewedIds(ids)
+      setViewedAuthors(authors)
+    })
   }, [])
 
   if (!prefs) {
@@ -45,10 +51,10 @@ export default function FeedScreen() {
     )
   }
 
-  return <Feed prefs={prefs} />
+  return <Feed prefs={prefs} viewedIds={viewedIds} viewedAuthors={viewedAuthors} />
 }
 
-function Feed({ prefs }: { prefs: UserPreferences }) {
+function Feed({ prefs, viewedIds, viewedAuthors }: { prefs: UserPreferences; viewedIds: number[]; viewedAuthors: string[] }) {
   const { colors, isDark, toggle } = useTheme()
 
   const [activeCategory, setActiveCategory] = useState<string | undefined>(undefined)
@@ -56,27 +62,20 @@ function Feed({ prefs }: { prefs: UserPreferences }) {
 
   const hasPrefs = prefs.categories.length > 0 || prefs.regions.some(r => r !== 'global')
 
-  const newsParams = useMemo<NewsParams>(() => {
-    const p: NewsParams = {}
+  const recommendedParams = useMemo<RecommendedParams>(() => {
+    const isForYou = !activeCategory && !activeRegion
 
-    if (activeRegion) {
-      p.region = activeRegion
-    } else {
-      const regions = prefs.regions.filter(r => r !== 'global')
-      if (regions.length === 1)      p.region  = regions[0]
-      else if (regions.length > 1)   p.regions = regions.join(',')
+    return {
+      filter_region:   activeRegion || undefined,
+      filter_category: activeCategory && (!activeRegion || activeRegion === 'global') ? activeCategory : undefined,
+
+      categories: activeCategory ? activeCategory : prefs.categories.join(','),
+      regions:    activeRegion   ? activeRegion   : prefs.regions.join(','),
+
+      viewed_ids:     isForYou ? viewedIds.join(',')       : undefined,
+      viewed_authors: isForYou ? viewedAuthors.join('|||') : undefined,
     }
-
-    if (activeCategory) {
-      p.category = activeCategory
-    } else if (prefs.categories.length === 1) {
-      p.category   = prefs.categories[0]
-    } else if (prefs.categories.length > 1) {
-      p.categories = prefs.categories.join(',')
-    }
-
-    return p
-  }, [prefs, activeCategory, activeRegion])
+  }, [prefs, viewedIds, viewedAuthors, activeCategory, activeRegion])
 
   const {
     data,
@@ -87,7 +86,7 @@ function Feed({ prefs }: { prefs: UserPreferences }) {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useNews(newsParams)
+  } = useRecommendedNews(recommendedParams)
 
   const articles = useMemo<Article[]>(() => {
     const seen = new Set<number>()
@@ -116,7 +115,9 @@ function Feed({ prefs }: { prefs: UserPreferences }) {
 
   const feedLabel = activeCategory
     ? activeCategory
-    : hasPrefs ? 'for you' : 'all'
+    : activeRegion
+      ? activeRegion
+      : hasPrefs ? 'for you' : 'top stories'
 
   const visibleCategories = activeCategory
     ? ALL_CATEGORIES
@@ -200,7 +201,7 @@ function Feed({ prefs }: { prefs: UserPreferences }) {
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           onEndReached={onEndReached}
-          onEndReachedThreshold={0.2}
+          onEndReachedThreshold={0.5}
           ListFooterComponent={ListFooter}
           refreshControl={
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />
